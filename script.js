@@ -1,5 +1,5 @@
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://attendance-server-nkxx.onrender.com/api';
 
 
 const dateFilter = document.getElementById('date-filter');
@@ -366,4 +366,5 @@ function showError(message) {
     
     console.error(message);
     alert(message); 
+
 }
