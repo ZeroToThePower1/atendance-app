@@ -19,7 +19,7 @@ async function initializeApp() {
 
 async function loadStudentsFromServer() {
     try {
-        const response = await fetch('http://localhost:3000/api/students');
+        const response = await fetch('https://attendance-server-nkxx.onrender.com/api/students');
         if (response.ok) {
             const students = await response.json();
             console.log('Students loaded from server:', students);
@@ -37,7 +37,7 @@ async function loadStudentsFromServer() {
 
 async function saveStudentsToServer(students) {
     try {
-        const response = await fetch('http://localhost:3000/api/students', {
+        const response = await fetch('https://attendance-server-nkxx.onrender.com/api/students', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ async function saveStudentsToServer(students) {
 
 async function saveAttendanceToServer(attendanceRecords) {
     try {
-        const response = await fetch('http://localhost:3000/api/attendance', {
+        const response = await fetch('https://attendance-server-nkxx.onrender.com/api/attendance', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -320,6 +320,7 @@ async function attending(elm) {
         alert("Please add students first!");
     }
 }
+
 
 
 window.addEventListener('load', initializeApp);
