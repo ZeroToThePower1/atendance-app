@@ -1,5 +1,5 @@
 
-const API_BASE = 'https://attendance-server-nkxx.onrender.com/api';
+const API_BASE = 'attendance-server-production.up.railway.app/api';
 
 
 const dateFilter = document.getElementById('date-filter');
@@ -368,3 +368,4 @@ function showError(message) {
     alert(message); 
 
 }
+
