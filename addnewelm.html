@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="addnewelm.css">
+</head>
+<body>
+    <div class="container">
+        <header class="title">
+            <h2 class="maintitle"><i class="fas fa-user-plus"></i>Adding New Element</h2>
+        </header>
+        <main class="NEW">
+            <div class="section">
+                <div class="section-title"><i class="fas fa-users"></i> Student Management</div>
+                
+                <input type="checkbox" id="addnewstudents" value="yes" style="display: none;">
+                
+                <div class="checkbox-container">
+                    <label for="addnewstudents">Add New Students?</label>
+                </div>
+                
+                <div class="addnewinputs">
+                    <input type="text" placeholder="Enter student name" id="names">
+                    <button onclick="working(this)" id="addstudent"><i class="fas fa-plus"></i> Add</button>
+                </div>
+                <div class="studentlist addnewinputs" style="display: block;"><div class="total">this will show total students </div></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title"><i class="fas fa-calendar-check"></i> Attendance</div>
+                <div class="start-button">
+                    <button onclick="attending(this)"><i class="fas fa-play-circle"></i> Start Attendance</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="addnewelm.js"></script>
+</body>
+</html>

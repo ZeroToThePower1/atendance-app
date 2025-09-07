@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance History</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="title">
+        <h2><i class="fas fa-history"></i> Attendance History</h2>
+    </header>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <h3>24</h3>
+                <p>Total Records</p>
+            </div>
+            <div class="stat-card">
+                <h3>86%</h3>
+                <p>Average Attendance</p>
+            </div>
+            <div class="stat-card">
+                <h3>5</h3>
+                <p>Classes This Week</p>
+            </div>
+        </div>
+
+        <div class="records">
+            <div class="record-header">
+                <h3>Attendance Records</h3>
+                <button class="export-btn"><i class="fas fa-download"></i> Export All</button>
+            </div>
+
+            <div class="record-list">
+                <div class="record-item">
+                    <div class="record-date">
+                        <div>Monday, May 15, 2023</div>
+                        <div class="class-name">Mathematics - 9:00 AM</div>
+                    </div>
+                    <div class="record-stats">
+                        <div class="record-stat">
+                            <span class="present">18</span>
+                            <span>Present</span>
+                        </div>
+                        <div class="record-stat">
+                            <span class="absent">4</span>
+                            <span>Absent</span>
+                        </div>
+                    </div>
+                    <div class="record-actions">
+                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
+                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+
+                <div class="record-item">
+                    <div class="record-date">
+                        <div>Wednesday, May 10, 2023</div>
+                        <div class="class-name">Science - 10:30 AM</div>
+                    </div>
+                    <div class="record-stats">
+                        <div class="record-stat">
+                            <span class="present">20</span>
+                            <span>Present</span>
+                        </div>
+                        <div class="record-stat">
+                            <span class="absent">2</span>
+                            <span>Absent</span>
+                        </div>
+                    </div>
+                    <div class="record-actions">
+                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
+                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+
+                <div class="record-item">
+                    <div class="record-date">
+                        <div>Friday, May 5, 2023</div>
+                        <div class="class-name">English - 1:00 PM</div>
+                    </div>
+                    <div class="record-stats">
+                        <div class="record-stat">
+                            <span class="present">19</span>
+                            <span>Present</span>
+                        </div>
+                        <div class="record-stat">
+                            <span class="absent">3</span>
+                            <span>Absent</span>
+                        </div>
+                    </div>
+                    <div class="record-actions">
+                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
+                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+
+                <div class="record-item">
+                    <div class="record-date">
+                        <div>Monday, May 1, 2023</div>
+                        <div class="class-name">Mathematics - 9:00 AM</div>
+                    </div>
+                    <div class="record-stats">
+                        <div class="record-stat">
+                            <span class="present">17</span>
+                            <span>Present</span>
+                        </div>
+                        <div class="record-stat">
+                            <span class="absent">5</span>
+                            <span>Absent</span>
+                        </div>
+                    </div>
+                    <div class="record-actions">
+                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
+                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="addnewelm.html">
+        <div class="floating-btn">
+            <i class="fas fa-plus"></i>
+        </div>
+    </a>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
