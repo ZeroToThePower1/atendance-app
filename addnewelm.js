@@ -41,7 +41,7 @@ async function saveStudentsToServer(students) {
         const studentObjects = students.map((name, index) => ({
             name: name,
             studentId: `STU${String(index + 1).padStart(3, '0')}`,
-            class: "General"
+            class: "BCA(Ist year)beta"
         }));
         
         const response = await fetch('https://attendance-server-nkxx.onrender.com/api/students', {
@@ -331,6 +331,7 @@ async function attending(elm) {
 
 
 window.addEventListener('load', initializeApp);
+
 
 
 
