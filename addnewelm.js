@@ -1,4 +1,3 @@
-
 let count = 0;
 let listofnames = [];
 
@@ -7,7 +6,8 @@ async function initializeApp() {
     try {
         const students = await loadStudentsFromServer();
         if (students && students.length > 0) {
-            listofnames = students;
+
+            listofnames = students.map(student => student.name);
             count = students.length;
             addnewelm(listofnames, count);
         }
@@ -37,23 +37,31 @@ async function loadStudentsFromServer() {
 
 async function saveStudentsToServer(students) {
     try {
+
+        const studentObjects = students.map((name, index) => ({
+            name: name,
+            studentId: `STU${String(index + 1).padStart(3, '0')}`,
+            class: "General"
+        }));
+        
         const response = await fetch('https://attendance-server-nkxx.onrender.com/api/students', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(students)
+            body: JSON.stringify(studentObjects)
         });
         
         if (response.ok) {
             console.log('Students saved successfully to server');
             return true;
         } else {
-            throw new Error('Server returned an error');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Server returned an error');
         }
     } catch (error) {
         console.error('Error saving students:', error);
-        alert('Failed to save students. Please try again.');
+        alert('Failed to save students: ' + error.message);
         return false;
     }
 }
@@ -67,7 +75,7 @@ async function saveAttendanceToServer(attendanceRecords) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                date: new Date().toISOString().split('T')[0], // Current date
+                date: new Date().toISOString().split('T')[0],
                 records: attendanceRecords
             })
         });
@@ -77,17 +85,17 @@ async function saveAttendanceToServer(attendanceRecords) {
             console.log('Attendance saved successfully:', result);
             return result;
         } else {
-            throw new Error('Server returned an error');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Server returned an error');
         }
     } catch (error) {
         console.error('Error saving attendance:', error);
-        alert('Failed to save attendance. Please try again.');
+        alert('Failed to save attendance: ' + error.message);
         return null;
     }
 }
 
 function addnewelm(list, count) {
-
     const studentList = document.querySelector(".studentlist");
     studentList.innerHTML = '<div class="total">No of total student(s): ' + count + '</div>';
     
@@ -114,12 +122,12 @@ async function working(elm) {
         listofnames.push(newname.value);
         addnewelm(listofnames, count);
         
-
+  
         const success = await saveStudentsToServer(listofnames);
         if (success) {
             document.getElementById('names').value = '';
         } else {
-            // Revert changes if save failed
+      
             listofnames.pop();
             count -= 1;
             addnewelm(listofnames, count);
@@ -138,7 +146,7 @@ async function attending(elm) {
         document.querySelector('.NEW').style.display = 'none';
         document.querySelector('.maintitle').innerText = "Taking Attendance";
         
-
+   
         let container = document.createElement('div');
         container.className = 'attendance-container';
         container.style.display = 'flex';
@@ -151,6 +159,7 @@ async function attending(elm) {
         container.style.maxWidth = '500px';
         container.style.margin = '20px auto';
         container.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        
 
         let namebox = document.createElement('div');
         namebox.className = 'student-display';
@@ -168,7 +177,7 @@ async function attending(elm) {
         namebox.style.padding = '10px';
         namebox.innerText = listofnames[0]; 
         
-
+ 
         let statusIndicator = document.createElement('div');
         statusIndicator.className = 'status-indicator';
         statusIndicator.style.fontSize = '16px';
@@ -176,7 +185,7 @@ async function attending(elm) {
         statusIndicator.style.color = '#666';
         statusIndicator.innerText = `Student 1 of ${listofnames.length}`;
         
-
+  
         let buttonsContainer = document.createElement('div');
         buttonsContainer.style.display = 'flex';
         buttonsContainer.style.gap = '20px';
@@ -199,7 +208,7 @@ async function attending(elm) {
         absent.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
         absent.onmouseout = function() { this.style.transform = 'scale(1)'; };
         
-
+   
         let present = document.createElement('button');
         present.className = 'present-btn';
         present.style.width = '100px';
@@ -216,17 +225,17 @@ async function attending(elm) {
         present.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
         present.onmouseout = function() { this.style.transform = 'scale(1)'; };
         
-     
+ 
         buttonsContainer.appendChild(absent);
         buttonsContainer.appendChild(present);
         container.appendChild(namebox);
         container.appendChild(statusIndicator);
         container.appendChild(buttonsContainer);
         
-
+  
         document.body.appendChild(container);
         
-
+      
         let attendanceRecords = [];
         let currentStudentIndex = 0;
         
@@ -238,33 +247,33 @@ async function attending(elm) {
         
 
         async function markAttendance(status) {
- 
+     
             let record = {
                 name: listofnames[currentStudentIndex],
                 status: status,
                 timestamp: new Date().toLocaleString()
             };
             
-  
+
             attendanceRecords.push(record);
             console.log("Attendance recorded:", record);
             
-
+ 
             currentStudentIndex++;
             
             if (currentStudentIndex < listofnames.length) {
                 updateDisplay();
             } else {
- 
+     
                 namebox.innerText = "Attendance Complete!";
                 namebox.style.backgroundColor = '#2ed573';
                 statusIndicator.innerText = `Recorded attendance for ${attendanceRecords.length} students`;
                 buttonsContainer.style.display = 'none';
                 
-
+      
                 const result = await saveAttendanceToServer(attendanceRecords);
                 
-
+      
                 let resultsDiv = document.createElement('div');
                 resultsDiv.style.marginTop = '20px';
                 resultsDiv.style.padding = '15px';
@@ -307,7 +316,6 @@ async function attending(elm) {
             }
         }
         
-
         absent.addEventListener('click', function() {
             markAttendance('Absent');
         });
@@ -322,7 +330,7 @@ async function attending(elm) {
 }
 
 
-
 window.addEventListener('load', initializeApp);
+
 
 
