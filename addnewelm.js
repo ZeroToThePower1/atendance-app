@@ -255,13 +255,13 @@ function startAttendanceSession(students, isPartialAttendance) {
         ? "Taking Attendance for New Students" 
         : "Taking Attendance";
     
-  
+    // Remove existing container if any
     const existingContainer = document.querySelector('.attendance-container');
     if (existingContainer) {
         existingContainer.remove();
     }
     
- 
+    // Create main container
     let container = document.createElement('div');
     container.className = 'attendance-container';
     container.style.display = 'flex';
@@ -274,8 +274,34 @@ function startAttendanceSession(students, isPartialAttendance) {
     container.style.maxWidth = '500px';
     container.style.margin = '20px auto';
     container.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-    
 
+    // Add bulk action buttons
+    let bulkActions = document.createElement('div');
+    bulkActions.className = 'bulk-actions';
+    
+    let allPresentBtn = document.createElement('button');
+    allPresentBtn.className = 'bulk-btn all-present';
+    allPresentBtn.innerHTML = '<i class="fas fa-check-circle"></i> Mark All Present';
+    allPresentBtn.title = 'Quickly mark all remaining students as Present';
+    
+    let allAbsentBtn = document.createElement('button');
+    allAbsentBtn.className = 'bulk-btn all-absent';
+    allAbsentBtn.innerHTML = '<i class="fas fa-times-circle"></i> Mark All Absent';
+    allAbsentBtn.title = 'Quickly mark all remaining students as Absent';
+    
+    bulkActions.appendChild(allPresentBtn);
+    bulkActions.appendChild(allAbsentBtn);
+    container.appendChild(bulkActions);
+
+    // Add quick actions hint
+    let quickActions = document.createElement('div');
+    quickActions.className = 'quick-actions';
+    quickActions.innerHTML = `
+        <p><i class="fas fa-lightbulb"></i> Tip: Use bulk actions above or individual buttons below</p>
+    `;
+    container.appendChild(quickActions);
+
+    // Student display
     let namebox = document.createElement('div');
     namebox.className = 'student-display';
     namebox.style.width = '250px';
@@ -291,21 +317,20 @@ function startAttendanceSession(students, isPartialAttendance) {
     namebox.style.textAlign = 'center';
     namebox.style.padding = '10px';
     namebox.innerText = students[0];
-    
 
+    // Status indicator
     let statusIndicator = document.createElement('div');
     statusIndicator.className = 'status-indicator';
     statusIndicator.style.fontSize = '16px';
     statusIndicator.style.marginTop = '10px';
     statusIndicator.style.color = '#666';
     statusIndicator.innerText = `Student 1 of ${students.length}`;
-    
 
+    // Individual action buttons
     let buttonsContainer = document.createElement('div');
     buttonsContainer.style.display = 'flex';
     buttonsContainer.style.gap = '20px';
     buttonsContainer.style.marginTop = '20px';
-    
 
     let absent = document.createElement('button');
     absent.className = 'absent-btn';
@@ -322,7 +347,6 @@ function startAttendanceSession(students, isPartialAttendance) {
     absent.innerText = "Absent";
     absent.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
     absent.onmouseout = function() { this.style.transform = 'scale(1)'; };
-    
 
     let present = document.createElement('button');
     present.className = 'present-btn';
@@ -339,27 +363,39 @@ function startAttendanceSession(students, isPartialAttendance) {
     present.innerText = "Present";
     present.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
     present.onmouseout = function() { this.style.transform = 'scale(1)'; };
-    
 
     buttonsContainer.appendChild(absent);
     buttonsContainer.appendChild(present);
     container.appendChild(namebox);
     container.appendChild(statusIndicator);
     container.appendChild(buttonsContainer);
-    
 
     document.body.appendChild(container);
-    
 
     let attendanceRecords = [];
     let currentStudentIndex = 0;
-    
 
     function updateDisplay() {
         namebox.innerText = students[currentStudentIndex];
         statusIndicator.innerText = `Student ${currentStudentIndex + 1} of ${students.length}`;
+        
+        // Update bulk buttons state
+        const remainingStudents = students.length - currentStudentIndex;
+        allPresentBtn.disabled = remainingStudents === 0;
+        allAbsentBtn.disabled = remainingStudents === 0;
+        
+        if (remainingStudents === 0) {
+            allPresentBtn.style.opacity = '0.5';
+            allAbsentBtn.style.opacity = '0.5';
+            allPresentBtn.style.cursor = 'not-allowed';
+            allAbsentBtn.style.cursor = 'not-allowed';
+        } else {
+            allPresentBtn.style.opacity = '1';
+            allAbsentBtn.style.opacity = '1';
+            allPresentBtn.style.cursor = 'pointer';
+            allAbsentBtn.style.cursor = 'pointer';
+        }
     }
-    
 
     async function markAttendance(status) {
         let record = {
@@ -376,39 +412,61 @@ function startAttendanceSession(students, isPartialAttendance) {
         if (currentStudentIndex < students.length) {
             updateDisplay();
         } else {
-            namebox.innerText = "Attendance Complete!";
-            namebox.style.backgroundColor = '#2ed573';
-            statusIndicator.innerText = `Recorded attendance for ${attendanceRecords.length} students`;
-            buttonsContainer.style.display = 'none';
-            
-        
-            if (isPartialAttendance) {
-                try {
-                    const today = new Date().toISOString().split('T')[0];
-                    const response = await fetch(`https://attendance-server-nkxx.onrender.com/api/attendance/${today}`);
-                    
-                    if (response.ok) {
-                        const existingAttendance = await response.json();
-          
-                        const mergedRecords = [...existingAttendance.records, ...attendanceRecords];
-                        
-                    
-                        const result = await saveMergedAttendance(today, mergedRecords);
-                        showAttendanceResults(attendanceRecords, result, true);
-                    }
-                } catch (error) {
-                    console.error('Error merging attendance:', error);
-                    alert('Error saving attendance: ' + error.message);
-                }
-            } else {
-    
-                const result = await saveAttendanceToServer(attendanceRecords);
-                showAttendanceResults(attendanceRecords, result, false);
-            }
+            finishAttendance();
         }
     }
-    
 
+    // NEW: Function to mark all remaining students
+    function markAllRemaining(status) {
+        const remainingStudents = students.slice(currentStudentIndex);
+        
+        remainingStudents.forEach(student => {
+            let record = {
+                name: student,
+                status: status,
+                timestamp: new Date().toLocaleString()
+            };
+            attendanceRecords.push(record);
+        });
+        
+        console.log(`Marked all ${remainingStudents.length} students as ${status}`);
+        currentStudentIndex = students.length;
+        finishAttendance();
+    }
+
+    // NEW: Updated finish attendance function
+    async function finishAttendance() {
+        namebox.innerText = "Attendance Complete!";
+        namebox.style.backgroundColor = '#2ed573';
+        statusIndicator.innerText = `Recorded attendance for ${attendanceRecords.length} students`;
+        buttonsContainer.style.display = 'none';
+        bulkActions.style.display = 'none';
+        quickActions.style.display = 'none';
+        
+        // Save to server
+        if (isPartialAttendance) {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`https://attendance-server-nkxx.onrender.com/api/attendance/${today}`);
+                
+                if (response.ok) {
+                    const existingAttendance = await response.json();
+                    const mergedRecords = [...existingAttendance.records, ...attendanceRecords];
+                    
+                    const result = await saveMergedAttendance(today, mergedRecords);
+                    showAttendanceResults(attendanceRecords, result, true);
+                }
+            } catch (error) {
+                console.error('Error merging attendance:', error);
+                alert('Error saving attendance: ' + error.message);
+            }
+        } else {
+            const result = await saveAttendanceToServer(attendanceRecords);
+            showAttendanceResults(attendanceRecords, result, false);
+        }
+    }
+
+    // Event listeners for individual buttons
     absent.addEventListener('click', function() {
         markAttendance('Absent');
     });
@@ -416,8 +474,33 @@ function startAttendanceSession(students, isPartialAttendance) {
     present.addEventListener('click', function() {
         markAttendance('Present');
     });
-}
 
+    // NEW: Event listeners for bulk actions
+    allPresentBtn.addEventListener('click', function() {
+        if (!allPresentBtn.disabled) {
+            const confirmMarkAll = confirm(
+                `Mark all ${students.length - currentStudentIndex} remaining students as Present?`
+            );
+            if (confirmMarkAll) {
+                markAllRemaining('Present');
+            }
+        }
+    });
+
+    allAbsentBtn.addEventListener('click', function() {
+        if (!allAbsentBtn.disabled) {
+            const confirmMarkAll = confirm(
+                `Mark all ${students.length - currentStudentIndex} remaining students as Absent?`
+            );
+            if (confirmMarkAll) {
+                markAllRemaining('Absent');
+            }
+        }
+    });
+
+    // Initialize display
+    updateDisplay();
+}
 
 async function saveMergedAttendance(date, records) {
     try {
@@ -497,3 +580,4 @@ document.addEventListener('keydown', (event) => {
 
 
 window.addEventListener('load', initializeApp);
+
