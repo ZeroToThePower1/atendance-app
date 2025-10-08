@@ -1,6 +1,4 @@
-
 const API_BASE = 'https://attendance-server-nkxx.onrender.com/api';
-
 
 const dateFilter = document.getElementById('date-filter');
 const classFilter = document.getElementById('class-filter');
@@ -9,11 +7,11 @@ const recordList = document.querySelector('.record-list');
 const statsContainer = document.querySelector('.stats');
 const exportAllBtn = document.querySelector('.record-header .export-btn');
 const floatingBtn = document.querySelector('.floating-btn');
-
+const deleteAllRecordsBtn = document.getElementById('deleteAllRecords');
+const deleteOldRecordsBtn = document.getElementById('deleteOldRecords');
 
 let allRecords = [];
 let filteredRecords = [];
-
 
 document.addEventListener('DOMContentLoaded', function() {
     loadStatistics();
@@ -21,15 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
-
 function setupEventListeners() {
     dateFilter.addEventListener('change', filterRecords);
     classFilter.addEventListener('change', filterRecords);
     searchInput.addEventListener('input', filterRecords);
     exportAllBtn.addEventListener('click', exportAllData);
     floatingBtn.addEventListener('click', addNewRecord);
+    deleteAllRecordsBtn.addEventListener('click', confirmDeleteAllRecords);
+    deleteOldRecordsBtn.addEventListener('click', confirmDeleteOldRecords);
 }
-
 
 async function loadStatistics() {
     try {
@@ -47,7 +45,6 @@ async function loadStatistics() {
     }
 }
 
-
 function updateStatistics(stats) {
     const statCards = statsContainer.querySelectorAll('.stat-card');
     
@@ -55,7 +52,6 @@ function updateStatistics(stats) {
     statCards[1].querySelector('h3').textContent = stats.averageAttendance ? `${stats.averageAttendance}%` : '0%';
     statCards[2].querySelector('h3').textContent = stats.totalClasses || 0;
 }
-
 
 async function loadAttendanceRecords() {
     try {
@@ -77,7 +73,6 @@ async function loadAttendanceRecords() {
         hideLoading();
     }
 }
-
 
 function displayRecords(records) {
     if (records.length === 0) {
@@ -109,6 +104,10 @@ function displayRecords(records) {
                     <span class="absent">${record.absent}</span>
                     <span>Absent</span>
                 </div>
+                <div class="record-stat">
+                    <span class="attendance-rate">${record.attendanceRate}%</span>
+                    <span>Rate</span>
+                </div>
             </div>
             <div class="record-actions">
                 <button class="view-btn" data-date="${record.date}">
@@ -117,13 +116,16 @@ function displayRecords(records) {
                 <button class="export-btn" data-date="${record.date}">
                     <i class="fas fa-download"></i> Export
                 </button>
+                <button class="delete-btn" data-date="${record.date}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             </div>
         `;
         
         recordList.appendChild(recordItem);
     });
     
-
+    // Add event listeners to action buttons
     document.querySelectorAll('.view-btn').forEach(btn => {
         btn.addEventListener('click', () => viewRecordDetails(btn.dataset.date));
     });
@@ -131,8 +133,241 @@ function displayRecords(records) {
     document.querySelectorAll('.export-btn').forEach(btn => {
         btn.addEventListener('click', () => exportRecord(btn.dataset.date));
     });
+    
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => confirmDeleteRecord(btn.dataset.date));
+    });
 }
 
+// DELETE FUNCTIONALITY
+
+function confirmDeleteAllRecords() {
+    if (allRecords.length === 0) {
+        showMessage('No records to delete', 'info');
+        return;
+    }
+    
+    showConfirmationModal(
+        'Delete All Records',
+        `Are you sure you want to delete ALL ${allRecords.length} attendance records? This action cannot be undone.`,
+        () => deleteAllRecords()
+    );
+}
+
+function confirmDeleteOldRecords() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const oldRecords = allRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate < thirtyDaysAgo;
+    });
+    
+    if (oldRecords.length === 0) {
+        showMessage('No records older than 30 days found', 'info');
+        return;
+    }
+    
+    showConfirmationModal(
+        'Delete Old Records',
+        `Are you sure you want to delete ${oldRecords.length} records older than 30 days? This action cannot be undone.`,
+        () => deleteOldRecords()
+    );
+}
+
+function confirmDeleteRecord(date) {
+    const record = allRecords.find(r => r.date === date);
+    if (!record) return;
+    
+    showConfirmationModal(
+        'Delete Record',
+        `Are you sure you want to delete the attendance record for ${formatDate(date)}? This will remove ${record.totalStudents} student records. This action cannot be undone.`,
+        () => deleteSingleRecord(date)
+    );
+}
+
+async function deleteAllRecords() {
+    try {
+        showLoading();
+        const response = await fetch(`${API_BASE}/attendance`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(`Successfully deleted all ${result.deletedCount} attendance records`, 'success');
+            loadAttendanceRecords();
+            loadStatistics();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete records');
+        }
+    } catch (error) {
+        console.error('Error deleting all records:', error);
+        showError(`Error deleting records: ${error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteOldRecords() {
+    try {
+        showLoading();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        // Get all attendance dates first
+        const datesResponse = await fetch(`${API_BASE}/attendance/dates`);
+        if (!datesResponse.ok) throw new Error('Failed to fetch dates');
+        
+        const dates = await datesResponse.json();
+        const oldDates = dates.filter(date => {
+            const recordDate = new Date(date);
+            return recordDate < thirtyDaysAgo;
+        });
+        
+        if (oldDates.length === 0) {
+            showMessage('No records older than 30 days found', 'info');
+            return;
+        }
+        
+        // Delete each old record
+        let deletedCount = 0;
+        for (const date of oldDates) {
+            const deleteResponse = await fetch(`${API_BASE}/attendance/${date}`, {
+                method: 'DELETE'
+            });
+            
+            if (deleteResponse.ok) {
+                deletedCount++;
+            }
+        }
+        
+        showMessage(`Successfully deleted ${deletedCount} old records`, 'success');
+        loadAttendanceRecords();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error deleting old records:', error);
+        showError(`Error deleting old records: ${error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteSingleRecord(date) {
+    try {
+        showLoading();
+        const response = await fetch(`${API_BASE}/attendance/${date}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage(`Successfully deleted attendance record for ${formatDate(date)}`, 'success');
+            loadAttendanceRecords();
+            loadStatistics();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete record');
+        }
+    } catch (error) {
+        console.error('Error deleting record:', error);
+        showError(`Error deleting record: ${error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// UTILITY FUNCTIONS
+
+function showConfirmationModal(title, message, onConfirm) {
+    const modal = document.createElement('div');
+    modal.className = 'modal confirmation-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div style="font-size: 48px; color: #ff4757; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 style="margin-bottom: 15px; color: #333;">${title}</h2>
+            <p style="margin-bottom: 25px; color: #666; line-height: 1.5;">${message}</p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="cancel-btn" style="padding: 12px 30px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                    Cancel
+                </button>
+                <button class="confirm-btn" style="padding: 12px 30px; background: #ff4757; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                    Delete
+                </button>
+            </div>
+        </div>
+    `;
+    
+    const cancelBtn = modal.querySelector('.cancel-btn');
+    const confirmBtn = modal.querySelector('.confirm-btn');
+    
+    cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
+    
+    confirmBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        onConfirm();
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    document.body.appendChild(modal);
+}
+
+function showMessage(message, type = 'success') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: ${type === 'success' ? '#2ed573' : type === 'error' ? '#ff4757' : '#3498db'};
+        color: white;
+        border-radius: 5px;
+        z-index: 1001;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    messageDiv.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        ${message}
+    `;
+    
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        if (document.body.contains(messageDiv)) {
+            document.body.removeChild(messageDiv);
+        }
+    }, 4000);
+}
+
+// Existing functions (keep all your existing functions below)
 
 function filterRecords() {
     const dateValue = dateFilter.value;
@@ -140,7 +375,6 @@ function filterRecords() {
     const searchValue = searchInput.value.toLowerCase();
     
     filteredRecords = allRecords.filter(record => {
-
         if (dateValue !== 'all') {
             const recordDate = new Date(record.date);
             const today = new Date();
@@ -156,15 +390,13 @@ function filterRecords() {
             }
         }
         
-       
         if (classValue !== 'all') {
-            
+            // Add class filtering logic if needed
         }
         
-
         if (searchValue) {
-            
-            return true; 
+            // Add search filtering logic if needed
+            return true;
         }
         
         return true;
@@ -172,7 +404,6 @@ function filterRecords() {
     
     displayRecords(filteredRecords);
 }
-
 
 async function viewRecordDetails(date) {
     try {
@@ -190,9 +421,7 @@ async function viewRecordDetails(date) {
     }
 }
 
-
 function showRecordModal(record) {
-
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = `
@@ -241,14 +470,12 @@ function showRecordModal(record) {
         </div>
     `;
     
-
     modal.querySelector('button').addEventListener('click', () => {
         document.body.removeChild(modal);
     });
     
     document.body.appendChild(modal);
 }
-
 
 async function exportRecord(date) {
     try {
@@ -266,15 +493,11 @@ async function exportRecord(date) {
     }
 }
 
-
 async function exportAllData() {
     try {
-      
         const response = await fetch(`${API_BASE}/attendance`);
         if (response.ok) {
             const records = await response.json();
-            
-           
             if (records.length > 0) {
                 exportToCSV(records, 'all-attendance-records.csv');
             }
@@ -288,18 +511,15 @@ async function exportAllData() {
     }
 }
 
-
 function exportToCSV(data, filename) {
     let csvContent = "data:text/csv;charset=utf-8,";
     
     if (Array.isArray(data)) {
-       
         csvContent += "Date,Total Students,Present,Absent,Attendance Rate\n";
         data.forEach(record => {
             csvContent += `${record.date},${record.totalStudents},${record.present},${record.absent},${record.attendanceRate}%\n`;
         });
     } else {
-        
         csvContent += "Student Name,Status,Timestamp\n";
         data.records.forEach(student => {
             csvContent += `${student.name},${student.status},${student.timestamp || ''}\n`;
@@ -315,13 +535,9 @@ function exportToCSV(data, filename) {
     document.body.removeChild(link);
 }
 
-
 function addNewRecord() {
-    
     alert('Redirecting to attendance page...');
-    
 }
-
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -354,19 +570,15 @@ function isThisMonth(date) {
 }
 
 function showLoading() {
-    
     recordList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 }
 
 function hideLoading() {
-    
+    // Hide loading indicator if needed
 }
 
 function showError(message) {
-    
-    console.error(message);
-    alert(message); 
-
+    showMessage(message, 'error');
 }
 
 
