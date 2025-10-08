@@ -193,7 +193,59 @@
      background: linear-gradient(135deg, #682bd7 0%, #8a63d3 100%);
      box-shadow: 0 6px 15px rgba(104, 43, 215, 0.3);
  }
+/* Add these to your existing CSS */
 
+.bulk-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.bulk-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.bulk-btn.all-present {
+    background: linear-gradient(135deg, #2ed573 0%, #26c464 100%);
+    color: white;
+}
+
+.bulk-btn.all-absent {
+    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+    color: white;
+}
+
+.bulk-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+.bulk-btn:active {
+    transform: translateY(0);
+}
+
+.quick-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.quick-actions p {
+    margin-bottom: 10px;
+    color: #666;
+    font-size: 14px;
+}
  @media (max-width: 600px) {
      main {
          padding: 20px;
@@ -206,4 +258,5 @@
      button {
          width: 100%;
      }
+
  }
