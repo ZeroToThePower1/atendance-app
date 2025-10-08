@@ -400,6 +400,67 @@
             }
         }
 
+        /* Status Badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-present {
+            background: #2ed573;
+            color: white;
+        }
+
+        .status-absent {
+            background: #ff4757;
+            color: white;
+        }
+
+        .status-late {
+            background: #ffa502;
+            color: white;
+        }
+
+        /* Status Select */
+        .status-select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .save-btn {
+            padding: 6px 12px;
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:hover {
+            background: #26c464;
+        }
+
+        .save-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .record-header {
@@ -562,6 +623,7 @@
 
         let allRecords = [];
         let filteredRecords = [];
+        let currentEditingRecord = null;
 
         document.addEventListener('DOMContentLoaded', function() {
             loadStatistics();
@@ -660,7 +722,7 @@
                     </div>
                     <div class="record-actions">
                         <button class="view-btn" data-date="${record.date}">
-                            <i class="fas fa-eye"></i> View
+                            <i class="fas fa-eye"></i> View/Edit
                         </button>
                         <button class="export-btn" data-date="${record.date}">
                             <i class="fas fa-download"></i> Export
@@ -688,8 +750,198 @@
             });
         }
 
-        // DELETE FUNCTIONALITY
+        // NEW: Function to view and edit record details
+        async function viewRecordDetails(date) {
+            try {
+                const response = await fetch(`${API_BASE}/attendance/${date}`);
+                if (response.ok) {
+                    const record = await response.json();
+                    showRecordModal(record);
+                } else {
+                    console.error('Failed to load record details');
+                    showError('Failed to load record details');
+                }
+            } catch (error) {
+                console.error('Error loading record details:', error);
+                showError('Error loading record details');
+            }
+        }
 
+        // UPDATED: Show record modal with editing capability
+        function showRecordModal(record) {
+            currentEditingRecord = JSON.parse(JSON.stringify(record)); // Deep copy
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: #6a11cb;">Attendance for ${record.date}</h2>
+                        <button class="close-modal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong>Total Students:</strong> ${record.records.length}<br>
+                            <strong>Present:</strong> <span style="color: #2ed573;">${record.records.filter(r => r.status === 'Present').length}</span><br>
+                            <strong>Absent:</strong> <span style="color: #ff4757;">${record.records.filter(r => r.status === 'Absent').length}</span><br>
+                            <strong>Late:</strong> <span style="color: #ffa502;">${record.records.filter(r => r.status === 'Late').length}</span>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong>Actions:</strong><br>
+                            <button id="saveChangesBtn" class="save-btn" style="margin-top: 10px; width: 100%;">
+                                <i class="fas fa-save"></i> Save All Changes
+                            </button>
+                            <button id="discardChangesBtn" style="margin-top: 5px; padding: 8px 15px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
+                                <i class="fas fa-times"></i> Discard Changes
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <h3 style="margin-bottom: 15px;">Student Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #eee; background: #f8f9fa;">
+                                    <th style="text-align: left; padding: 12px;">Student Name</th>
+                                    <th style="text-align: left; padding: 12px;">Current Status</th>
+                                    <th style="text-align: left; padding: 12px;">Change Status</th>
+                                    <th style="text-align: left; padding: 12px;">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentRecordsBody">
+                                ${record.records.map((student, index) => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 12px; font-weight: 500;">${student.name}</td>
+                                        <td style="padding: 12px;">
+                                            <span class="status-badge ${getStatusClass(student.status)}">${student.status}</span>
+                                        </td>
+                                        <td style="padding: 12px;">
+                                            <select class="status-select" data-index="${index}" style="width: 100%;">
+                                                <option value="Present" ${student.status === 'Present' ? 'selected' : ''}>Present</option>
+                                                <option value="Absent" ${student.status === 'Absent' ? 'selected' : ''}>Absent</option>
+                                                <option value="Late" ${student.status === 'Late' ? 'selected' : ''}>Late</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 12px; color: #666; font-size: 12px;">${student.timestamp || 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners
+            modal.querySelector('.close-modal').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            modal.querySelector('#saveChangesBtn').addEventListener('click', () => {
+                saveRecordChanges(record.date);
+            });
+            
+            modal.querySelector('#discardChangesBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            // Track changes in status selects
+            modal.querySelectorAll('.status-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const index = parseInt(this.dataset.index);
+                    const newStatus = this.value;
+                    currentEditingRecord.records[index].status = newStatus;
+                    
+                    // Update the current status display
+                    const statusBadge = this.closest('tr').querySelector('.status-badge');
+                    statusBadge.className = `status-badge ${getStatusClass(newStatus)}`;
+                    statusBadge.textContent = newStatus;
+                    
+                    // Enable save button
+                    modal.querySelector('#saveChangesBtn').disabled = false;
+                });
+            });
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+            
+            document.body.appendChild(modal);
+        }
+
+        // NEW: Function to get CSS class for status badge
+        function getStatusClass(status) {
+            switch(status) {
+                case 'Present': return 'status-present';
+                case 'Absent': return 'status-absent';
+                case 'Late': return 'status-late';
+                default: return 'status-absent';
+            }
+        }
+
+        // NEW: Function to save changes to the record
+        async function saveRecordChanges(date) {
+            try {
+                showLoading();
+                
+                // Update timestamps for changed records
+                const now = new Date().toISOString();
+                currentEditingRecord.records.forEach(record => {
+                    record.timestamp = now;
+                });
+                
+                const response = await fetch(`${API_BASE}/attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: date,
+                        records: currentEditingRecord.records
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage('Attendance record updated successfully!', 'success');
+                    
+                    // Close modal
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        document.body.removeChild(modal);
+                    });
+                    
+                    // Refresh the records list
+                    loadAttendanceRecords();
+                    loadStatistics();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update record');
+                }
+            } catch (error) {
+                console.error('Error updating record:', error);
+                showError(`Error updating record: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // DELETE FUNCTIONALITY (existing code remains the same)
         function confirmDeleteAllRecords() {
             if (allRecords.length === 0) {
                 showMessage('No records to delete', 'info');
@@ -1118,78 +1370,6 @@
             displayRecords(filteredRecords);
         }
 
-        async function viewRecordDetails(date) {
-            try {
-                const response = await fetch(`${API_BASE}/attendance/${date}`);
-                if (response.ok) {
-                    const record = await response.json();
-                    showRecordModal(record);
-                } else {
-                    console.error('Failed to load record details');
-                    showError('Failed to load record details');
-                }
-            } catch (error) {
-                console.error('Error loading record details:', error);
-                showError('Error loading record details');
-            }
-        }
-
-        function showRecordModal(record) {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 1000;
-            `;
-            
-            modal.innerHTML = `
-                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-                    <h2 style="margin-bottom: 20px; color: #6a11cb;">Attendance for ${record.date}</h2>
-                    <div style="margin-bottom: 20px;">
-                        <strong>Total Students:</strong> ${record.records.length}<br>
-                        <strong>Present:</strong> <span style="color: #2ed573;">${record.records.filter(r => r.status === 'Present').length}</span><br>
-                        <strong>Absent:</strong> <span style="color: #ff4757;">${record.records.filter(r => r.status === 'Absent').length}</span>
-                    </div>
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        <h3 style="margin-bottom: 10px;">Student Details</h3>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="border-bottom: 2px solid #eee;">
-                                    <th style="text-align: left; padding: 10px;">Student</th>
-                                    <th style="text-align: left; padding: 10px;">Status</th>
-                                    <th style="text-align: left; padding: 10px;">Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${record.records.map(student => `
-                                    <tr style="border-bottom: 1px solid #eee;">
-                                        <td style="padding: 10px;">${student.name}</td>
-                                        <td style="padding: 10px; color: ${student.status === 'Present' ? '#2ed573' : '#ff4757'};">${student.status}</td>
-                                        <td style="padding: 10px;">${student.timestamp || 'N/A'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <button style="margin-top: 20px; padding: 10px 20px; background: #6a11cb; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
-                </div>
-            `;
-            
-            modal.querySelector('button').addEventListener('click', () => {
-                document.body.removeChild(modal);
-            });
-            
-            document.body.appendChild(modal);
-        }
-
         async function exportRecord(date) {
             try {
                 const response = await fetch(`${API_BASE}/attendance/${date}`);
@@ -1283,7 +1463,7 @@
         }
 
         function hideLoading() {
-        
+            // Hide loading indicator if needed
         }
 
         function showError(message) {
