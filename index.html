@@ -32,96 +32,53 @@
             </div>
         </div>
 
+        <!-- Delete Controls Section -->
+        <div class="delete-controls">
+            <h3>Manage Records</h3>
+            <div class="delete-buttons">
+                <button class="delete-btn danger" id="deleteAllRecords">
+                    <i class="fas fa-trash"></i> Delete All Records
+                </button>
+                <button class="delete-btn warning" id="deleteOldRecords">
+                    <i class="fas fa-calendar-times"></i> Delete Records Older Than 30 Days
+                </button>
+            </div>
+        </div>
+
         <div class="records">
             <div class="record-header">
                 <h3>Attendance Records</h3>
-                <button class="export-btn"><i class="fas fa-download"></i> Export All</button>
+                <div class="header-actions">
+                    <button class="export-btn"><i class="fas fa-download"></i> Export All</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="date-filter">Date Filter:</label>
+                    <select id="date-filter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="class-filter">Class:</label>
+                    <select id="class-filter">
+                        <option value="all">All Classes</option>
+                        <!-- Class options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="search">Search:</label>
+                    <input type="text" id="search" placeholder="Search records...">
+                </div>
             </div>
 
             <div class="record-list">
-                <div class="record-item">
-                    <div class="record-date">
-                        <div>Monday, May 15, 2023</div>
-                        <div class="class-name">Mathematics - 9:00 AM</div>
-                    </div>
-                    <div class="record-stats">
-                        <div class="record-stat">
-                            <span class="present">18</span>
-                            <span>Present</span>
-                        </div>
-                        <div class="record-stat">
-                            <span class="absent">4</span>
-                            <span>Absent</span>
-                        </div>
-                    </div>
-                    <div class="record-actions">
-                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
-                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="record-item">
-                    <div class="record-date">
-                        <div>Wednesday, May 10, 2023</div>
-                        <div class="class-name">Science - 10:30 AM</div>
-                    </div>
-                    <div class="record-stats">
-                        <div class="record-stat">
-                            <span class="present">20</span>
-                            <span>Present</span>
-                        </div>
-                        <div class="record-stat">
-                            <span class="absent">2</span>
-                            <span>Absent</span>
-                        </div>
-                    </div>
-                    <div class="record-actions">
-                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
-                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="record-item">
-                    <div class="record-date">
-                        <div>Friday, May 5, 2023</div>
-                        <div class="class-name">English - 1:00 PM</div>
-                    </div>
-                    <div class="record-stats">
-                        <div class="record-stat">
-                            <span class="present">19</span>
-                            <span>Present</span>
-                        </div>
-                        <div class="record-stat">
-                            <span class="absent">3</span>
-                            <span>Absent</span>
-                        </div>
-                    </div>
-                    <div class="record-actions">
-                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
-                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
-
-                <div class="record-item">
-                    <div class="record-date">
-                        <div>Monday, May 1, 2023</div>
-                        <div class="class-name">Mathematics - 9:00 AM</div>
-                    </div>
-                    <div class="record-stats">
-                        <div class="record-stat">
-                            <span class="present">17</span>
-                            <span>Present</span>
-                        </div>
-                        <div class="record-stat">
-                            <span class="absent">5</span>
-                            <span>Absent</span>
-                        </div>
-                    </div>
-                    <div class="record-actions">
-                        <button class="view-btn"><i class="fas fa-eye"></i> View</button>
-                        <button class="export-btn"><i class="fas fa-download"></i> Export</button>
-                    </div>
-                </div>
+                <!-- Records will be populated dynamically -->
             </div>
         </div>
     </div>
